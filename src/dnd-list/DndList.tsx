@@ -1,5 +1,12 @@
-import React, {JSXElementConstructor, ReactElement, useCallback, useEffect, useRef, useState} from 'react';
-import {createPortal, unstable_batchedUpdates} from 'react-dom';
+import React, {
+  JSXElementConstructor,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal, unstable_batchedUpdates } from "react-dom";
 import {
   CancelDrop,
   closestCenter,
@@ -14,14 +21,13 @@ import {
   MouseSensor,
   TouchSensor,
   Modifiers,
-  useDroppable,
   UniqueIdentifier,
   useSensors,
   useSensor,
   MeasuringStrategy,
   KeyboardCoordinateGetter,
   defaultDropAnimationSideEffects,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   AnimateLayoutChanges,
   SortableContext,
@@ -31,19 +37,19 @@ import {
   verticalListSortingStrategy,
   SortingStrategy,
   horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {CSS} from '@dnd-kit/utilities';
-import {coordinateGetter as multipleContainersCoordinateGetter} from './multipleContainersKeyboardCoordinates';
-import { Container, ContainerProps } from './Container';
-import { Item } from './Item';
-import {createRange} from './createRange';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { coordinateGetter as multipleContainersCoordinateGetter } from "./multipleContainersKeyboardCoordinates";
+import { Container, ContainerProps } from "./Container";
+import { Item } from "./Item";
+import { createRange } from "./createRange";
 
 export default {
-  title: 'Presets/Sortable/Multiple Containers',
+  title: "Presets/Sortable/Multiple Containers",
 };
 
 const animateLayoutChanges: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges({...args, wasDragging: true});
+  defaultAnimateLayoutChanges({ ...args, wasDragging: true });
 
 function DroppableContainer({
   children,
@@ -71,13 +77,13 @@ function DroppableContainer({
   } = useSortable({
     id,
     data: {
-      type: 'container',
+      type: "container",
       children: items,
     },
     animateLayoutChanges,
   });
   const isOverContainer = over
-    ? (id === over.id && active?.data.current?.type !== 'container') ||
+    ? (id === over.id && active?.data.current?.type !== "container") ||
       items.includes(over.id)
     : false;
 
@@ -107,7 +113,7 @@ const dropAnimation: DropAnimation = {
   sideEffects: defaultDropAnimationSideEffects({
     styles: {
       active: {
-        opacity: '0.5',
+        opacity: "0.5",
       },
     },
   }),
@@ -130,7 +136,7 @@ interface Props {
     isSorting: boolean;
     isDragOverlay: boolean;
   }): React.CSSProperties;
-  wrapperStyle?(args: {index: number}): React.CSSProperties;
+  wrapperStyle?(args: { index: number }): React.CSSProperties;
   itemCount?: number;
   items?: Items;
   handle?: boolean;
@@ -139,13 +145,12 @@ interface Props {
   strategy?: SortingStrategy;
   modifiers?: Modifiers;
   minimal?: boolean;
-  trashable?: boolean;
   scrollable?: boolean;
   vertical?: boolean;
 }
 
-export const TRASH_ID = 'void';
-const PLACEHOLDER_ID = 'placeholder';
+export const TRASH_ID = "void";
+const PLACEHOLDER_ID = "placeholder";
 const empty: UniqueIdentifier[] = [];
 
 export function DndList({
@@ -163,7 +168,6 @@ export function DndList({
   modifiers,
   renderItem,
   strategy = verticalListSortingStrategy,
-  trashable = false,
   vertical = false,
   scrollable,
 }: Props) {
@@ -184,6 +188,14 @@ export function DndList({
   const recentlyMovedToNewContainer = useRef(false);
   const isSortingContainer =
     activeId != null ? containers.includes(activeId) : false;
+
+  useEffect(() => {
+    console.log(items);
+  }, [items]);
+
+  useEffect(() => {
+    console.log(containers);
+  }, [containers]);
 
   /**
    * Custom collision detection strategy optimized for multiple containers
@@ -211,7 +223,7 @@ export function DndList({
           ? // If there are droppables intersecting with the pointer, return those
             pointerIntersections
           : rectIntersection(args);
-      let overId = getFirstCollision(intersections, 'id');
+      let overId = getFirstCollision(intersections, "id");
 
       if (overId != null) {
         if (overId === TRASH_ID) {
@@ -239,7 +251,7 @@ export function DndList({
 
         lastOverId.current = overId;
 
-        return [{id: overId}];
+        return [{ id: overId }];
       }
 
       // When a draggable item moves to a new container, the layout may shift
@@ -251,7 +263,7 @@ export function DndList({
       }
 
       // If no droppable is matched, return the last match
-      return lastOverId.current ? [{id: lastOverId.current}] : [];
+      return lastOverId.current ? [{ id: lastOverId.current }] : [];
     },
     [activeId, items]
   );
@@ -309,11 +321,11 @@ export function DndList({
           strategy: MeasuringStrategy.Always,
         },
       }}
-      onDragStart={({active}) => {
+      onDragStart={({ active }) => {
         setActiveId(active.id);
         setClonedItems(items);
       }}
-      onDragOver={({active, over}) => {
+      onDragOver={({ active, over }) => {
         const overId = over?.id;
 
         if (overId == null || overId === TRASH_ID || active.id in items) {
@@ -370,7 +382,7 @@ export function DndList({
           });
         }
       }}
-      onDragEnd={({active, over}) => {
+      onDragEnd={({ active, over }) => {
         if (active.id in items && over?.id) {
           setContainers((containers) => {
             const activeIndex = containers.indexOf(active.id);
@@ -394,28 +406,19 @@ export function DndList({
           return;
         }
 
-        if (overId === TRASH_ID) {
-          setItems((items) => ({
-            ...items,
-            [activeContainer]: items[activeContainer].filter(
-              (id) => id !== activeId
-            ),
-          }));
-          setActiveId(null);
-          return;
-        }
-
         if (overId === PLACEHOLDER_ID) {
-          const newContainerId = getNextContainerId();
-
           unstable_batchedUpdates(() => {
-            setContainers((containers) => [...containers, newContainerId]);
+            setContainers((containers) => [...containers, active.id]);
+            if (active.id in containers) {
+              return;
+            }
+
             setItems((items) => ({
               ...items,
               [activeContainer]: items[activeContainer].filter(
                 (id) => id !== activeId
               ),
-              [newContainerId]: [active.id],
+              [active.id]:[],
             }));
             setActiveId(null);
           });
@@ -448,10 +451,10 @@ export function DndList({
     >
       <div
         style={{
-          display: 'inline-grid',
-          boxSizing: 'border-box',
+          display: "inline-grid",
+          boxSizing: "border-box",
           padding: 20,
-          gridAutoFlow: vertical ? 'row' : 'column',
+          gridAutoFlow: vertical ? "row" : "column",
         }}
       >
         <SortableContext
@@ -462,51 +465,48 @@ export function DndList({
               : horizontalListSortingStrategy
           }
         >
-          {containers.map((containerId) => (
-            <DroppableContainer
-              key={containerId}
-              id={containerId}
-              label={minimal ? undefined : `Column ${containerId}`}
-              columns={columns}
-              items={items[containerId]}
-              scrollable={scrollable}
-              style={containerStyle}
-              unstyled={minimal}
-              onRemove={() => handleRemove(containerId)}
-            >
-              <SortableContext items={items[containerId]} strategy={strategy}>
-                {items[containerId].map((value, index) => {
-                  return (
-                    <SortableItem
-                      disabled={isSortingContainer}
-                      key={value}
-                      id={value}
-                      index={index}
-                      handle={handle}
-                      style={getItemStyles}
-                      wrapperStyle={wrapperStyle}
-                      // @ts-expect-error - `containerId` is missing in props
-                      renderItem={renderItem}
-                      containerId={containerId}
-                      getIndex={getIndex}
-                    />
-                  );
-                })}
-              </SortableContext>
-            </DroppableContainer>
-          ))}
-          {minimal ? undefined : (
-            <DroppableContainer
-              id={PLACEHOLDER_ID}
-              disabled={isSortingContainer}
-              items={empty}
-              onClick={handleAddColumn}
-              placeholder
-            >
-              + Add column
-            </DroppableContainer>
-          )}
+          <DroppableContainer
+            id={PLACEHOLDER_ID}
+            disabled={isSortingContainer}
+            items={empty}
+            placeholder
+          >
+            {containers.map((containerId) => (
+              <DroppableContainer
+                key={containerId}
+                id={containerId}
+                label={minimal ? undefined : `Column ${containerId}`}
+                columns={columns}
+                items={items[containerId]}
+                scrollable={scrollable}
+                style={containerStyle}
+                unstyled={minimal}
+                onRemove={() => handleRemove(containerId)}
+              >
+                <SortableContext items={items[containerId]} strategy={strategy}>
+                  {items[containerId].map((value, index) => {
+                    return (
+                      <SortableItem
+                        disabled={isSortingContainer}
+                        key={value}
+                        id={value}
+                        index={index}
+                        handle={handle}
+                        style={getItemStyles}
+                        wrapperStyle={wrapperStyle}
+                        // @ts-expect-error - `containerId` is missing in props
+                        renderItem={renderItem}
+                        containerId={containerId}
+                        getIndex={getIndex}
+                      />
+                    );
+                  })}
+                </SortableContext>
+              </DroppableContainer>
+            ))}
+          </DroppableContainer>
         </SortableContext>
+        <button onClick={handleAddColumn}>Add container</button>
       </div>
       {createPortal(
         <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
@@ -518,9 +518,6 @@ export function DndList({
         </DragOverlay>,
         document.body
       )}
-      {trashable && activeId && !containers.includes(activeId) ? (
-        <Trash id={TRASH_ID} />
-      ) : null}
     </DndContext>
   );
 
@@ -539,7 +536,7 @@ export function DndList({
           isDragOverlay: true,
         })}
         color={getColor(id)}
-        wrapperStyle={wrapperStyle({index: 0})}
+        wrapperStyle={wrapperStyle({ index: 0 })}
         renderItem={renderItem}
         dragOverlay
       />
@@ -552,7 +549,7 @@ export function DndList({
         label={`Column ${containerId}`}
         columns={columns}
         style={{
-          height: '100%',
+          height: "100%",
         }}
         shadow
         unstyled={false}
@@ -572,7 +569,7 @@ export function DndList({
               isDragOverlay: false,
             })}
             color={getColor(item)}
-            wrapperStyle={wrapperStyle({index})}
+            wrapperStyle={wrapperStyle({ index })}
             renderItem={renderItem}
           />
         ))}
@@ -587,7 +584,7 @@ export function DndList({
   }
 
   function handleAddColumn() {
-    const newContainerId = getNextContainerId();
+    const newContainerId = String(Math.random()).slice(2);
 
     unstable_batchedUpdates(() => {
       setContainers((containers) => [...containers, newContainerId]);
@@ -597,56 +594,21 @@ export function DndList({
       }));
     });
   }
-
-  function getNextContainerId() {
-    const containerIds = Object.keys(items);
-    const lastContainerId = containerIds[containerIds.length - 1];
-
-    return String.fromCharCode(lastContainerId.charCodeAt(0) + 1);
-  }
 }
 
 function getColor(id: UniqueIdentifier) {
   switch (String(id)[0]) {
-    case 'A':
-      return '#7193f1';
-    case 'B':
-      return '#ffda6c';
-    case 'C':
-      return '#00bcd4';
-    case 'D':
-      return '#ef769f';
+    case "A":
+      return "#7193f1";
+    case "B":
+      return "#ffda6c";
+    case "C":
+      return "#00bcd4";
+    case "D":
+      return "#ef769f";
   }
 
   return undefined;
-}
-
-function Trash({id}: {id: UniqueIdentifier}) {
-  const {setNodeRef, isOver} = useDroppable({
-    id,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'fixed',
-        left: '50%',
-        marginLeft: -150,
-        bottom: 20,
-        width: 300,
-        height: 60,
-        borderRadius: 5,
-        border: '1px solid',
-        borderColor: isOver ? 'red' : '#DDD',
-      }}
-    >
-      Drop here to delete
-    </div>
-  );
 }
 
 interface SortableItemProps {
@@ -658,7 +620,7 @@ interface SortableItemProps {
   style(args: unknown): React.CSSProperties;
   getIndex(id: UniqueIdentifier): number;
   renderItem(): React.ReactElement;
-  wrapperStyle({index}: {index: number}): React.CSSProperties;
+  wrapperStyle({ index }: { index: number }): React.CSSProperties;
 }
 
 function SortableItem({
@@ -695,9 +657,9 @@ function SortableItem({
       dragging={isDragging}
       sorting={isSorting}
       handle={handle}
-      handleProps={handle ? {ref: setActivatorNodeRef} : undefined}
+      handleProps={handle ? { ref: setActivatorNodeRef } : undefined}
       index={index}
-      wrapperStyle={wrapperStyle({index})}
+      wrapperStyle={wrapperStyle({ index })}
       style={style({
         index,
         value: id,
