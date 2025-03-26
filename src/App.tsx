@@ -1,15 +1,16 @@
-import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
+import dndLogo from "./assets/dnd-kit-docs-gradient-logo.svg";
 import "./App.css";
 import styled from "styled-components";
+import { DndList } from "./dnd-list/DndList";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
     <Grid>
-      <Sidebar>test</Sidebar>
+      <Sidebar>
+        <DndList vertical />
+      </Sidebar>
       <Placeholder>
         <div>
           <a href="https://vite.dev" target="_blank">
@@ -18,18 +19,13 @@ function App() {
           <a href="https://react.dev" target="_blank">
             <img src={reactLogo} className="logo react" alt="React logo" />
           </a>
+          <a href="https://docs.dndkit.com/" target="_blank">
+            <img src={dndLogo} className="logo dndkit" alt="Dndkit logo" />
+          </a>
         </div>
-        <h1>Vite + React</h1>
-        <div className="card">
-          <button onClick={() => setCount((count) => count + 1)}>
-            count is {count}
-          </button>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test HMR
-          </p>
-        </div>
+        <h1>Vite + React + Dndkit</h1>
         <p className="read-the-docs">
-          Click on the Vite and React logos to learn more
+          Click on the logos to learn more
         </p>
       </Placeholder>
     </Grid>
@@ -40,18 +36,20 @@ export default App;
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: 500px 1fr;
+  grid-template-columns: 1200px 1fr;
   gap: 10px;
+  height: 100vh;
 `;
 
 const Sidebar = styled.div`
   background-color: #242424;
-  min-height: 100vh;
-  `
+  color: #000;
+  overflow-y: scroll;
+`;
 
 const Placeholder = styled.div`
-    background-color: #242424;
-    height: 100vh;
-    display: grid;
-    place-content: center;
-`
+  background-color: #242424;
+  height: 100vh;
+  display: grid;
+  place-content: center;
+`;
