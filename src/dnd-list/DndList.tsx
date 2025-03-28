@@ -42,7 +42,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { coordinateGetter as multipleContainersCoordinateGetter } from "./multipleContainersKeyboardCoordinates";
 import { Container, ContainerProps } from "./Container";
 import { Item } from "./Item";
-import { createRange } from "./createRange";
+import { Items } from "./types";
 
 export default {
   title: "Presets/Sortable/Multiple Containers",
@@ -119,9 +119,11 @@ const dropAnimation: DropAnimation = {
   }),
 };
 
-type Items = Record<UniqueIdentifier, UniqueIdentifier[]>;
-
 interface Props {
+  items: Items;
+  setItems: React.Dispatch<React.SetStateAction<Items>>;
+  containers: UniqueIdentifier[];
+  setContainers: React.Dispatch<React.SetStateAction<UniqueIdentifier[]>>;
   adjustScale?: boolean;
   cancelDrop?: CancelDrop;
   columns?: number;
@@ -137,11 +139,11 @@ interface Props {
     isDragOverlay: boolean;
   }): React.CSSProperties;
   wrapperStyle?(args: { index: number }): React.CSSProperties;
-  itemCount?: number;
-  items?: Items;
   handle?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  renderItem?: () => ReactElement<unknown, string | JSXElementConstructor<any>>;
+  renderItem?: <P>() => ReactElement<
+    unknown,
+    string | JSXElementConstructor<P>
+  >;
   strategy?: SortingStrategy;
   modifiers?: Modifiers;
   minimal?: boolean;
@@ -149,17 +151,18 @@ interface Props {
   vertical?: boolean;
 }
 
-export const TRASH_ID = "void";
 const PLACEHOLDER_ID = "placeholder";
 const empty: UniqueIdentifier[] = [];
 
 export function DndList({
+  items,
+  setItems,
+  containers,
+  setContainers,
   adjustScale = false,
-  itemCount = 3,
   cancelDrop,
   columns,
   handle = false,
-  items: initialItems,
   containerStyle,
   coordinateGetter = multipleContainersCoordinateGetter,
   getItemStyles = () => ({}),
@@ -171,31 +174,11 @@ export function DndList({
   vertical = false,
   scrollable,
 }: Props) {
-  const [items, setItems] = useState<Items>(
-    () =>
-      initialItems ?? {
-        A: createRange(itemCount, (index: number) => `A${index + 1}`),
-        B: createRange(itemCount, (index: number) => `B${index + 1}`),
-        C: createRange(itemCount, (index: number) => `C${index + 1}`),
-        D: createRange(itemCount, (index: number) => `D${index + 1}`),
-      }
-  );
-  const [containers, setContainers] = useState(
-    Object.keys(items) as UniqueIdentifier[]
-  );
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
   const isSortingContainer =
     activeId != null ? containers.includes(activeId) : false;
-
-  useEffect(() => {
-    console.log(items);
-  }, [items]);
-
-  useEffect(() => {
-    console.log(containers);
-  }, [containers]);
 
   /**
    * Custom collision detection strategy optimized for multiple containers
@@ -226,12 +209,6 @@ export function DndList({
       let overId = getFirstCollision(intersections, "id");
 
       if (overId != null) {
-        if (overId === TRASH_ID) {
-          // If the intersecting droppable is the trash, return early
-          // Remove this if you're not using trashable functionality in your app
-          return intersections;
-        }
-
         if (overId in items) {
           const containerItems = items[overId];
 
@@ -297,8 +274,6 @@ export function DndList({
 
   const onDragCancel = () => {
     if (clonedItems) {
-      // Reset items to their original state in case items have been
-      // Dragged across containers
       setItems(clonedItems);
     }
 
@@ -328,7 +303,7 @@ export function DndList({
       onDragOver={({ active, over }) => {
         const overId = over?.id;
 
-        if (overId == null || overId === TRASH_ID || active.id in items) {
+        if (overId == null || active.id in items) {
           return;
         }
 
@@ -418,7 +393,7 @@ export function DndList({
               [activeContainer]: items[activeContainer].filter(
                 (id) => id !== activeId
               ),
-              [active.id]:[],
+              [active.id]: [],
             }));
             setActiveId(null);
           });
@@ -475,7 +450,7 @@ export function DndList({
               <DroppableContainer
                 key={containerId}
                 id={containerId}
-                label={minimal ? undefined : `Column ${containerId}`}
+                label={minimal ? undefined : `Container ${containerId}`}
                 columns={columns}
                 items={items[containerId]}
                 scrollable={scrollable}
@@ -494,7 +469,6 @@ export function DndList({
                         handle={handle}
                         style={getItemStyles}
                         wrapperStyle={wrapperStyle}
-                        // @ts-expect-error - `containerId` is missing in props
                         renderItem={renderItem}
                         containerId={containerId}
                         getIndex={getIndex}
@@ -546,7 +520,7 @@ export function DndList({
   function renderContainerDragOverlay(containerId: UniqueIdentifier) {
     return (
       <Container
-        label={`Column ${containerId}`}
+        label={`Container ${containerId}`}
         columns={columns}
         style={{
           height: "100%",
@@ -599,13 +573,13 @@ export function DndList({
 function getColor(id: UniqueIdentifier) {
   switch (String(id)[0]) {
     case "A":
-      return "#7193f1";
+      return "#ef769f";
     case "B":
       return "#ffda6c";
     case "C":
       return "#00bcd4";
     case "D":
-      return "#ef769f";
+      return "#7193f1";
   }
 
   return undefined;
@@ -619,7 +593,7 @@ interface SortableItemProps {
   disabled?: boolean;
   style(args: unknown): React.CSSProperties;
   getIndex(id: UniqueIdentifier): number;
-  renderItem(): React.ReactElement;
+  renderItem?(): React.ReactElement;
   wrapperStyle({ index }: { index: number }): React.CSSProperties;
 }
 
