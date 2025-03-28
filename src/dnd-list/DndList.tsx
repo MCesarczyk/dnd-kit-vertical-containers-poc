@@ -429,6 +429,7 @@ export function DndList({
           display: "inline-grid",
           boxSizing: "border-box",
           padding: 20,
+          gap: 20,
           gridAutoFlow: vertical ? "row" : "column",
         }}
       >
@@ -445,39 +446,62 @@ export function DndList({
             disabled={isSortingContainer}
             items={empty}
             placeholder
+            style={{
+              display: "flex",
+              flexDirection: vertical ? "column" : "row",
+              gap: 10,
+              ...containerStyle,}}
           >
-            {containers.map((containerId) => (
-              <DroppableContainer
-                key={containerId}
-                id={containerId}
-                label={minimal ? undefined : `Container ${containerId}`}
-                columns={columns}
-                items={items[containerId]}
-                scrollable={scrollable}
-                style={containerStyle}
-                unstyled={minimal}
-                onRemove={() => handleRemove(containerId)}
-              >
-                <SortableContext items={items[containerId]} strategy={strategy}>
-                  {items[containerId].map((value, index) => {
-                    return (
-                      <SortableItem
-                        disabled={isSortingContainer}
-                        key={value}
-                        id={value}
-                        index={index}
-                        handle={handle}
-                        style={getItemStyles}
-                        wrapperStyle={wrapperStyle}
-                        renderItem={renderItem}
-                        containerId={containerId}
-                        getIndex={getIndex}
-                      />
-                    );
-                  })}
-                </SortableContext>
-              </DroppableContainer>
-            ))}
+            {containers.map((containerId, index) =>
+              String(containerId).endsWith("-container") ? (
+                <DroppableContainer
+                  key={containerId}
+                  id={containerId}
+                  label={minimal ? undefined : `Container ${containerId}`}
+                  columns={columns}
+                  items={items[containerId]}
+                  scrollable={scrollable}
+                  style={containerStyle}
+                  unstyled={minimal}
+                  onRemove={() => handleRemove(containerId)}
+                >
+                  <SortableContext
+                    items={items[containerId]}
+                    strategy={strategy}
+                  >
+                    {items[containerId].map((value, index) => {
+                      return (
+                        <SortableItem
+                          disabled={isSortingContainer}
+                          key={value}
+                          id={value}
+                          index={index}
+                          handle={handle}
+                          style={getItemStyles}
+                          wrapperStyle={wrapperStyle}
+                          renderItem={renderItem}
+                          containerId={containerId}
+                          getIndex={getIndex}
+                        />
+                      );
+                    })}
+                  </SortableContext>
+                </DroppableContainer>
+              ) : (
+                <SortableItem
+                  key={containerId}
+                  id={containerId}
+                  index={index}
+                  handle={handle}
+                  style={getItemStyles}
+                  wrapperStyle={wrapperStyle}
+                  renderItem={renderItem}
+                  containerId={PLACEHOLDER_ID}
+                  getIndex={getIndex}
+                  disabled={isSortingContainer}
+                />
+              )
+            )}
           </DroppableContainer>
         </SortableContext>
         <button onClick={handleAddColumn}>Add container</button>
@@ -485,7 +509,7 @@ export function DndList({
       {createPortal(
         <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
           {activeId
-            ? containers.includes(activeId)
+            ? containers.includes(activeId) && String(activeId).endsWith("-container")
               ? renderContainerDragOverlay(activeId)
               : renderSortableItemDragOverlay(activeId)
             : null}

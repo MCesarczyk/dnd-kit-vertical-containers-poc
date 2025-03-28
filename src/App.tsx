@@ -14,15 +14,28 @@ const itemCount = 3;
 
 function App() {
   const [items, setItems] = useState<Items>(() => ({
-    A: createRange(itemCount, (index: number) => `A${index + 1}`),
-    B: createRange(itemCount, (index: number) => `B${index + 1}`),
-    C: createRange(itemCount, (index: number) => `C${index + 1}`),
-    D: createRange(itemCount, (index: number) => `D${index + 1}`),
+    ["A-container"]: createRange(
+      itemCount,
+      (index: number) => `A${index + 1}-item`
+    ),
+    ["B-container"]: createRange(
+      itemCount,
+      (index: number) => `B${index + 1}-item`
+    ),
+    ["C-container"]: createRange(
+      itemCount,
+      (index: number) => `C${index + 1}-item`
+    ),
+    ["D-container"]: createRange(
+      itemCount,
+      (index: number) => `D${index + 1}-item`
+    ),
   }));
 
   const [containers, setContainers] = useState(
     Object.keys(items) as UniqueIdentifier[]
   );
+
   return (
     <Grid>
       <Sidebar>
