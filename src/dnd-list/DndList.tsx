@@ -382,7 +382,11 @@ export function DndList({
         }
 
         if (overId === PLACEHOLDER_ID) {
-          const newContainerId = getNextContainerId();
+          const newContainerIdRaw = getNextContainerId();
+          const newContainerId = newContainerIdRaw.replace(
+            "-container",
+            "-fake-container"
+          );
 
           unstable_batchedUpdates(() => {
             setContainers((containers) => [...containers, newContainerId]);
@@ -451,50 +455,71 @@ export function DndList({
               ...containerStyle,
             }}
           >
-            {containers.map((containerId) =>
-                <DroppableContainer
-                  key={containerId}
-                  id={containerId}
-                  label={minimal ? undefined : `Container ${containerId}`}
-                  columns={columns}
-                  items={items[containerId]}
-                  scrollable={scrollable}
-                  style={containerStyle}
-                  unstyled={minimal}
-                  onRemove={() => handleRemove(containerId)}
-                >
-                  <SortableContext
-                    items={items[containerId]}
-                    strategy={strategy}
-                  >
-                    {items[containerId].map((value, index) => {
-                      return (
-                        <SortableItem
-                          disabled={isSortingContainer}
-                          key={value}
-                          id={value}
-                          index={index}
-                          handle={handle}
-                          style={getItemStyles}
-                          wrapperStyle={wrapperStyle}
-                          renderItem={renderItem}
-                          containerId={containerId}
-                          getIndex={getIndex}
-                        />
-                      );
-                    })}
-                  </SortableContext>
-                </DroppableContainer>
-            )}
+            {containers.map((containerId) => {
+              const fake = String(containerId).endsWith("-fake-container");
+              return (
+                <>
+                  {fake ? (
+                    <SortableItem
+                      key={containerId}
+                      id={containerId}
+                      index={containers.indexOf(containerId)}
+                      handle={handle}
+                      style={getItemStyles}
+                      wrapperStyle={wrapperStyle}
+                      renderItem={renderItem}
+                      containerId={containerId}
+                      getIndex={getIndex}
+                    />
+                  ) : (
+                    <DroppableContainer
+                      key={containerId}
+                      id={containerId}
+                      label={minimal ? undefined : `Container ${containerId}`}
+                      columns={columns}
+                      items={items[containerId]}
+                      scrollable={scrollable}
+                      style={containerStyle}
+                      unstyled={minimal}
+                      onRemove={() => handleRemove(containerId)}
+                    >
+                      <SortableContext
+                        items={items[containerId]}
+                        strategy={strategy}
+                      >
+                        {items[containerId].map((value, index) => {
+                          return (
+                            <SortableItem
+                              disabled={isSortingContainer}
+                              key={value}
+                              id={value}
+                              index={index}
+                              handle={handle}
+                              style={getItemStyles}
+                              wrapperStyle={wrapperStyle}
+                              renderItem={renderItem}
+                              containerId={containerId}
+                              getIndex={getIndex}
+                            />
+                          );
+                        })}
+                      </SortableContext>
+                    </DroppableContainer>
+                  )}
+                </>
+              );
+            })}
           </DroppableContainer>
         </SortableContext>
-        <button onClick={handleAddColumn}>Add container</button>
+        <button onClick={handleAddContainer}>Add container</button>
       </div>
       {createPortal(
         <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
           {activeId
             ? containers.includes(activeId) &&
-              String(activeId).endsWith("-container")
+              String(activeId).endsWith("-fake-container")
+              ? renderSortableItemDragOverlay(activeId)
+              : String(activeId).endsWith("-container")
               ? renderContainerDragOverlay(activeId)
               : renderSortableItemDragOverlay(activeId)
             : null}
@@ -566,7 +591,7 @@ export function DndList({
     );
   }
 
-  function handleAddColumn() {
+  function handleAddContainer() {
     const newContainerId = getNextContainerId();
 
     unstable_batchedUpdates(() => {
@@ -582,7 +607,7 @@ export function DndList({
     const containerIds = Object.keys(items);
     const lastContainerId = containerIds[containerIds.length - 1];
     const sanitizedId = lastContainerId.replace(/[^A-Z]/g, "");
-    
+
     return `${String.fromCharCode(sanitizedId.charCodeAt(0) + 1)}-container`;
   }
 }
