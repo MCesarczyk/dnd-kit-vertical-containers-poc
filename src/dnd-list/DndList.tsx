@@ -382,18 +382,16 @@ export function DndList({
         }
 
         if (overId === PLACEHOLDER_ID) {
-          unstable_batchedUpdates(() => {
-            setContainers((containers) => [...containers, active.id]);
-            if (active.id in containers) {
-              return;
-            }
+          const newContainerId = getNextContainerId();
 
+          unstable_batchedUpdates(() => {
+            setContainers((containers) => [...containers, newContainerId]);
             setItems((items) => ({
               ...items,
               [activeContainer]: items[activeContainer].filter(
                 (id) => id !== activeId
               ),
-              [active.id]: [],
+              [newContainerId]: [active.id],
             }));
             setActiveId(null);
           });
@@ -450,10 +448,10 @@ export function DndList({
               display: "flex",
               flexDirection: vertical ? "column" : "row",
               gap: 10,
-              ...containerStyle,}}
+              ...containerStyle,
+            }}
           >
-            {containers.map((containerId, index) =>
-              String(containerId).endsWith("-container") ? (
+            {containers.map((containerId) =>
                 <DroppableContainer
                   key={containerId}
                   id={containerId}
@@ -487,20 +485,6 @@ export function DndList({
                     })}
                   </SortableContext>
                 </DroppableContainer>
-              ) : (
-                <SortableItem
-                  key={containerId}
-                  id={containerId}
-                  index={index}
-                  handle={handle}
-                  style={getItemStyles}
-                  wrapperStyle={wrapperStyle}
-                  renderItem={renderItem}
-                  containerId={PLACEHOLDER_ID}
-                  getIndex={getIndex}
-                  disabled={isSortingContainer}
-                />
-              )
             )}
           </DroppableContainer>
         </SortableContext>
@@ -509,7 +493,8 @@ export function DndList({
       {createPortal(
         <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
           {activeId
-            ? containers.includes(activeId) && String(activeId).endsWith("-container")
+            ? containers.includes(activeId) &&
+              String(activeId).endsWith("-container")
               ? renderContainerDragOverlay(activeId)
               : renderSortableItemDragOverlay(activeId)
             : null}
@@ -582,7 +567,7 @@ export function DndList({
   }
 
   function handleAddColumn() {
-    const newContainerId = String(Math.random()).slice(2);
+    const newContainerId = getNextContainerId();
 
     unstable_batchedUpdates(() => {
       setContainers((containers) => [...containers, newContainerId]);
@@ -591,6 +576,14 @@ export function DndList({
         [newContainerId]: [],
       }));
     });
+  }
+
+  function getNextContainerId() {
+    const containerIds = Object.keys(items);
+    const lastContainerId = containerIds[containerIds.length - 1];
+    const sanitizedId = lastContainerId.replace(/[^A-Z]/g, "");
+    
+    return `${String.fromCharCode(sanitizedId.charCodeAt(0) + 1)}-container`;
   }
 }
 
