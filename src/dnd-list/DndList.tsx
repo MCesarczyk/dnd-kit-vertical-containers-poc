@@ -27,6 +27,7 @@ import {
   MeasuringStrategy,
   KeyboardCoordinateGetter,
   defaultDropAnimationSideEffects,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   AnimateLayoutChanges,
@@ -43,6 +44,7 @@ import { coordinateGetter as multipleContainersCoordinateGetter } from "./multip
 import { Container, ContainerProps } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
+import styled from "styled-components";
 
 export default {
   title: "Presets/Sortable/Multiple Containers",
@@ -82,6 +84,9 @@ function DroppableContainer({
     },
     animateLayoutChanges,
   });
+  const { setNodeRef: droppableNodeRef, isOver } = useDroppable({
+    id: `${id}-droppable`,
+  });
   const isOverContainer = over
     ? (id === over.id && active?.data.current?.type !== "container") ||
       items.includes(over.id)
@@ -104,10 +109,25 @@ function DroppableContainer({
       columns={columns}
       {...props}
     >
-      {children}
+      <>
+        <Dropzone
+          ref={droppableNodeRef}
+          style={isOver && String(active?.id).endsWith("-fake-container") ? { border: "1px solid red", borderRadius: '4px' } : undefined}
+        >
+          {children}
+        </Dropzone>
+      </>
     </Container>
   );
 }
+
+const Dropzone = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
 
 const dropAnimation: DropAnimation = {
   sideEffects: defaultDropAnimationSideEffects({
@@ -190,6 +210,15 @@ export function DndList({
    */
   const collisionDetectionStrategy: CollisionDetection = useCallback(
     (args) => {
+      if (String(activeId).endsWith("-fake-container")) {
+        return pointerWithin({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(
+            (container) => container.id !== activeId
+          ),
+        });
+      }
+
       if (activeId && activeId in items) {
         return closestCenter({
           ...args,
@@ -381,7 +410,7 @@ export function DndList({
           return;
         }
 
-        if (overId === PLACEHOLDER_ID) {
+        if (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") {
           const newContainerIdRaw = getNextContainerId();
           const newContainerId = newContainerIdRaw.replace(
             "-container",
@@ -400,6 +429,10 @@ export function DndList({
             setActiveId(null);
           });
           return;
+        }
+
+        if (active?.id && String(active.id).endsWith("-fake-container") && String(overId).endsWith("-container-droppable")) {
+          console.log("dnd", active.id, overId);
         }
 
         const overContainer = findContainer(overId);

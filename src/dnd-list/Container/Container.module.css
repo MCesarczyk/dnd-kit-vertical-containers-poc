@@ -19,7 +19,7 @@
     grid-gap: 4px;
     grid-template-columns: repeat(var(--columns, 1), 1fr);
     list-style: none;
-    padding: 4px 8px 12px;
+    padding: 4px 8px 24px;
     margin: 0;
   }
 
