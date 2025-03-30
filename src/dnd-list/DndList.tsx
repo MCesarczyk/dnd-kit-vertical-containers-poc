@@ -112,7 +112,11 @@ function DroppableContainer({
       <>
         <Dropzone
           ref={droppableNodeRef}
-          style={isOver && String(active?.id).endsWith("-fake-container") ? { border: "1px solid red", borderRadius: '4px' } : undefined}
+          style={
+            isOver && String(active?.id).endsWith("-fake-container")
+              ? { border: "1px solid red", borderRadius: "4px" }
+              : undefined
+          }
         >
           {children}
         </Dropzone>
@@ -410,7 +414,36 @@ export function DndList({
           return;
         }
 
-        if (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") {
+        const fakeContainerContent = items[activeContainer][0];
+        const droppableContainer = String(overId).endsWith(
+          "-container-droppable"
+        )
+          ? overId
+          : undefined;
+
+        if (droppableContainer) {
+          setItems((items) => {
+            const newItems: Items = items;
+            delete newItems[activeContainer];
+            const droppableContainerParent = String(droppableContainer).replace(
+              "-droppable",
+              ""
+            );
+
+            return {
+              ...newItems,
+              [droppableContainerParent]: [
+                ...items[droppableContainerParent],
+                fakeContainerContent,
+              ],
+            };
+          });
+          setContainers((containers) =>
+            containers.filter((id) => id !== activeContainer)
+          );
+        }
+
+        if ((overId === PLACEHOLDER_ID || overId === "placeholder-droppable") && !String(active.id).endsWith("-fake-container")) {
           const newContainerIdRaw = getNextContainerId();
           const newContainerId = newContainerIdRaw.replace(
             "-container",
@@ -429,10 +462,6 @@ export function DndList({
             setActiveId(null);
           });
           return;
-        }
-
-        if (active?.id && String(active.id).endsWith("-fake-container") && String(overId).endsWith("-container-droppable")) {
-          console.log("dnd", active.id, overId);
         }
 
         const overContainer = findContainer(overId);
