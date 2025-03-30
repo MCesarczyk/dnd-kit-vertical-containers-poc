@@ -420,20 +420,20 @@ export function DndList({
         )
           ? overId
           : undefined;
+          const droppableContainerParent = droppableContainer ? String(droppableContainer).replace(
+            "-droppable",
+            ""
+          ) : undefined;
 
-        if (droppableContainer) {
+        if (droppableContainer && droppableContainerParent) {
           setItems((items) => {
             const newItems: Items = items;
             delete newItems[activeContainer];
-            const droppableContainerParent = String(droppableContainer).replace(
-              "-droppable",
-              ""
-            );
 
             return {
               ...newItems,
               [droppableContainerParent]: [
-                ...items[droppableContainerParent],
+                ...(items[droppableContainerParent] || []),
                 fakeContainerContent,
               ],
             };
