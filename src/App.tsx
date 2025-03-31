@@ -1,14 +1,14 @@
 import { useState } from "react";
 import styled from "styled-components";
+import { UniqueIdentifier } from "@dnd-kit/core";
 
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import dndLogo from "./assets/dnd-kit-docs-gradient-logo.svg";
-import "./App.css";
 import { DndList } from "./dnd-list/DndList";
 import { Items } from "./dnd-list/types";
 import { createRange } from "./dnd-list/createRange";
-import { UniqueIdentifier } from "@dnd-kit/core";
+import "./App.css";
 
 const itemCount = 3;
 
@@ -36,10 +36,17 @@ function App() {
     Object.keys(items) as UniqueIdentifier[]
   );
 
+  const remappedItems: UniqueIdentifier[] = containers
+    .map((c) => items[c])
+    .flat();
+
   return (
     <Grid>
       <Sidebar>
-        <DndList vertical {...{ items, setItems, containers, setContainers, handle: true }} />
+        <DndList
+          vertical
+          {...{ items, setItems, containers, setContainers, handle: true }}
+        />
       </Sidebar>
       <Placeholder>
         <div>
@@ -54,21 +61,13 @@ function App() {
           </a>
         </div>
         <h1>Vertical nested list POC</h1>
-        <p className="read-the-docs">Items configuration:</p>
+        <p className="read-the-docs">Items order:</p>
         <PreviewWrapper>
           <Preview>
-            {Object.values(items).map((row) => (
-              <div key={String(row)}>{`[ ${row.map(
-                (item) => ` ${item}`
-              )} ]`}</div>
+            {remappedItems.flat().map((i) => (
+              <li key={String(i)}>{i}</li>
             ))}
           </Preview>
-        </PreviewWrapper>
-        <p className="read-the-docs">Containers configuration:</p>
-        <PreviewWrapper>
-          <Preview>{`[ ${containers.map(
-            (container) => ` ${container}`
-          )} ]`}</Preview>
         </PreviewWrapper>
       </Placeholder>
     </Grid>
@@ -100,6 +99,8 @@ const Placeholder = styled.div`
 const PreviewWrapper = styled.div`
   display: flex;
   justify-content: center;
+  height: 100%;
+  overflow-y: auto;
 `;
 
 const Preview = styled.ul`
