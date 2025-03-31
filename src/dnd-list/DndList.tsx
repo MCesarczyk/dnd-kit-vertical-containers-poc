@@ -233,7 +233,11 @@ export function DndList({
       ? String(droppableContainer).replace("-droppable", "")
       : undefined;
 
-    if (droppableContainer && droppableContainerParent) {
+    if (
+      String(activeContainer).endsWith("-fake-container") &&
+      droppableContainer &&
+      droppableContainerParent
+    ) {
       setItems((items) => {
         const newItems: Items = items;
         delete newItems[activeContainer];
@@ -342,6 +346,7 @@ export function DndList({
         >
           <DroppableContainer
             id={PLACEHOLDER_ID}
+            key={PLACEHOLDER_ID}
             disabled={isSortingContainer}
             items={empty}
             placeholder
@@ -359,7 +364,7 @@ export function DndList({
                 <>
                   {fake ? (
                     <SortableItem
-                      key={containerId}
+                      key={`${containerId}-fake`}
                       id={containerId}
                       label={String(items[containerId][0])}
                       index={containers.indexOf(containerId)}
@@ -438,6 +443,7 @@ export function DndList({
   function renderSortableItemDragOverlay(id: UniqueIdentifier, label: string) {
     return (
       <Item
+        key={`${id}-single-item-drag-overlay`}
         value={id}
         label={label}
         handle={handle}
@@ -471,7 +477,7 @@ export function DndList({
       >
         {items[containerId].map((item, index) => (
           <Item
-            key={item}
+            key={`${item}-children-item-drag-overlay`}
             value={item}
             label={String(item)}
             handle={handle}
