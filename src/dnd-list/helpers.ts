@@ -16,6 +16,26 @@ export const getColor = (id: UniqueIdentifier) => {
   return undefined;
 }
 
+export const findContainer = (items: Items, id: UniqueIdentifier) => {
+  if (id in items) {
+    return id;
+  }
+
+  return Object.keys(items).find((key) => items[key].includes(id));
+};
+
+export const getIndex = (items: Items, id: UniqueIdentifier) => {
+  const container = findContainer(items, id);
+
+  if (!container) {
+    return -1;
+  }
+
+  const index = items[container].indexOf(id);
+
+  return index;
+};
+
 export const getNextContainerId = (items: Items, offset?: number) => {
   const containerIds = Object.keys(items);
   const lastContainerId = containerIds[containerIds.length - 1];

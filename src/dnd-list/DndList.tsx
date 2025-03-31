@@ -39,7 +39,13 @@ import { coordinateGetter as multipleContainersCoordinateGetter } from "./multip
 import { Container } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
-import { getColor, getNewFakeContainerId, getNextContainerId } from "./helpers";
+import {
+  findContainer,
+  getColor,
+  getIndex,
+  getNewFakeContainerId,
+  getNextContainerId,
+} from "./helpers";
 import { SortableItem } from "./SortableItem";
 import { DroppableContainer } from "./DroppableContainer";
 import { useCollisionDetectionStrategy } from "./useCollisionDetectionStrategy";
@@ -131,25 +137,6 @@ export function DndList({
       coordinateGetter,
     })
   );
-  const findContainer = (id: UniqueIdentifier) => {
-    if (id in items) {
-      return id;
-    }
-
-    return Object.keys(items).find((key) => items[key].includes(id));
-  };
-
-  const getIndex = (id: UniqueIdentifier) => {
-    const container = findContainer(id);
-
-    if (!container) {
-      return -1;
-    }
-
-    const index = items[container].indexOf(id);
-
-    return index;
-  };
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(active.id);
@@ -163,8 +150,8 @@ export function DndList({
       return;
     }
 
-    const overContainer = findContainer(overId);
-    const activeContainer = findContainer(active.id);
+    const overContainer = findContainer(items, overId);
+    const activeContainer = findContainer(items, active.id);
 
     if (!overContainer || !activeContainer) {
       return;
@@ -224,7 +211,7 @@ export function DndList({
       });
     }
 
-    const activeContainer = findContainer(active.id);
+    const activeContainer = findContainer(items, active.id);
 
     if (!activeContainer) {
       setActiveId(null);
@@ -284,7 +271,7 @@ export function DndList({
       return;
     }
 
-    const overContainer = findContainer(overId);
+    const overContainer = findContainer(items, overId);
 
     if (overContainer) {
       const activeIndex = items[activeContainer].indexOf(active.id);
@@ -381,7 +368,7 @@ export function DndList({
                       wrapperStyle={wrapperStyle}
                       renderItem={renderItem}
                       containerId={containerId}
-                      getIndex={getIndex}
+                      getIndex={(id) => getIndex(items, id)}
                     />
                   ) : (
                     <DroppableContainer
@@ -411,7 +398,7 @@ export function DndList({
                               wrapperStyle={wrapperStyle}
                               renderItem={renderItem}
                               containerId={containerId}
-                              getIndex={getIndex}
+                              getIndex={(id) => getIndex(items, id)}
                             />
                           );
                         })}
@@ -447,9 +434,9 @@ export function DndList({
         value={id}
         handle={handle}
         style={getItemStyles({
-          containerId: findContainer(id) as UniqueIdentifier,
+          containerId: findContainer(items, id) as UniqueIdentifier,
           overIndex: -1,
-          index: getIndex(id),
+          index: getIndex(items, id),
           value: id,
           isSorting: true,
           isDragging: true,
@@ -482,7 +469,7 @@ export function DndList({
             style={getItemStyles({
               containerId,
               overIndex: -1,
-              index: getIndex(item),
+              index: getIndex(items, item),
               value: item,
               isDragging: false,
               isSorting: false,
