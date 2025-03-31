@@ -64,7 +64,7 @@ function App() {
         <p className="read-the-docs">Items order:</p>
         <PreviewWrapper>
           <Preview>
-            {remappedItems.flat().map((i) => (
+            {remappedItems.map((i) => (
               <li key={String(i)}>{i}</li>
             ))}
           </Preview>
