@@ -39,7 +39,7 @@ import { coordinateGetter as multipleContainersCoordinateGetter } from "./multip
 import { Container } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
-import { getColor, getNextContainerId } from "./helpers";
+import { getColor, getNewFakeContainerId, getNextContainerId } from "./helpers";
 import { SortableItem } from "./SortableItem";
 import { DroppableContainer } from "./DroppableContainer";
 import { useCollisionDetectionStrategy } from "./useCollisionDetectionStrategy";
@@ -268,11 +268,7 @@ export function DndList({
       (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") &&
       !String(active.id).endsWith("-fake-container")
     ) {
-      const newContainerIdRaw = getNextContainerId(items);
-      const newContainerId = newContainerIdRaw.replace(
-        "-container",
-        "-fake-container"
-      );
+      const newContainerId = getNewFakeContainerId(items);
 
       unstable_batchedUpdates(() => {
         setContainers((containers) => [...containers, newContainerId]);
@@ -346,6 +342,7 @@ export function DndList({
           boxSizing: "border-box",
           padding: 20,
           gap: 20,
+          height: "100%",
           gridAutoFlow: vertical ? "row" : "column",
         }}
       >
@@ -366,6 +363,7 @@ export function DndList({
               display: "flex",
               flexDirection: vertical ? "column" : "row",
               gap: 10,
+              height: "100%",
               ...containerStyle,
             }}
           >
@@ -423,9 +421,9 @@ export function DndList({
                 </>
               );
             })}
+            <button onClick={handleAddContainer}>Add container</button>
           </DroppableContainer>
         </SortableContext>
-        <button onClick={handleAddContainer}>Add container</button>
       </div>
       {createPortal(
         <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
@@ -500,9 +498,28 @@ export function DndList({
   }
 
   function handleRemove(containerID: UniqueIdentifier) {
-    setContainers((containers) =>
-      containers.filter((id) => id !== containerID)
-    );
+    setItems((items) => {
+      const newItems = { ...items };
+      items[containerID].forEach((item, index) => {
+        const newContainerId = getNewFakeContainerId(items, index);
+        newItems[newContainerId] = [...(newItems[newContainerId] || []), item];
+      });
+
+      delete newItems[containerID];
+
+      return newItems;
+    });
+    setContainers((containers) => {
+      const newContainers = [...containers.filter((id) => id !== containerID)];
+      items[containerID].forEach((_, index) => {
+        const newContainerId = getNewFakeContainerId(items, index);
+        newContainers.push(newContainerId);
+      });
+
+      return newContainers;
+    });
+    setActiveId(null);
+    setClonedItems(null);
   }
 
   function handleAddContainer() {
