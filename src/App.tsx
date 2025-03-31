@@ -14,21 +14,21 @@ const itemCount = 3;
 
 function App() {
   const [items, setItems] = useState<Items>(() => ({
-    ["A-container"]: createRange(
+    ["1-container"]: createRange(
       itemCount,
-      (index: number) => `A${index + 1}-item`
+      (index: number) => `1${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
     ),
-    ["B-container"]: createRange(
+    ["2-container"]: createRange(
       itemCount,
-      (index: number) => `B${index + 1}-item`
+      (index: number) => `2${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
     ),
-    ["C-container"]: createRange(
+    ["3-container"]: createRange(
       itemCount,
-      (index: number) => `C${index + 1}-item`
+      (index: number) => `3${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
     ),
-    ["D-container"]: createRange(
+    ["4-container"]: createRange(
       itemCount,
-      (index: number) => `D${index + 1}-item`
+      (index: number) => `4${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
     ),
   }));
 

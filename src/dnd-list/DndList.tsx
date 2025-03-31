@@ -329,7 +329,6 @@ export function DndList({
           boxSizing: "border-box",
           padding: 20,
           gap: 20,
-          height: "100%",
           gridAutoFlow: vertical ? "row" : "column",
         }}
       >

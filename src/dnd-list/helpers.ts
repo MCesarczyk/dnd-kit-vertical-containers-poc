@@ -3,13 +3,13 @@ import { Items } from "./types";
 
 export const getColor = (id: UniqueIdentifier) => {
   switch (String(id)[0]) {
-    case "A":
+    case "1":
       return "#ef769f";
-    case "B":
+    case "2":
       return "#ffda6c";
-    case "C":
+    case "3":
       return "#00bcd4";
-    case "D":
+    case "4":
       return "#7193f1";
   }
 
@@ -39,9 +39,9 @@ export const getIndex = (items: Items, id: UniqueIdentifier) => {
 export const getNextContainerId = (items: Items, offset?: number) => {
   const containerIds = Object.keys(items);
   const lastContainerId = containerIds[containerIds.length - 1];
-  const sanitizedId = lastContainerId.replace(/[^A-Z]/g, "");
+  const sanitizedId = lastContainerId.replace(/[^0-9]/g, "");
 
-  return `${String.fromCharCode(sanitizedId.charCodeAt(0) + 1 + (offset || 0))}-container`;
+  return `${parseInt(sanitizedId) + 1 + (offset || 0)}-container`;
 }
 
 export const getNewFakeContainerId = (items: Items, index?: number) => {
