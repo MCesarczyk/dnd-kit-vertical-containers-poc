@@ -1,6 +1,9 @@
-import React, {
+import {
+  CSSProperties,
+  Dispatch,
   JSXElementConstructor,
   ReactElement,
+  SetStateAction,
   useCallback,
   useEffect,
   useRef,
@@ -27,114 +30,26 @@ import {
   MeasuringStrategy,
   KeyboardCoordinateGetter,
   defaultDropAnimationSideEffects,
-  useDroppable,
 } from "@dnd-kit/core";
 import {
-  AnimateLayoutChanges,
   SortableContext,
-  useSortable,
   arrayMove,
-  defaultAnimateLayoutChanges,
   verticalListSortingStrategy,
   SortingStrategy,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import styled from "styled-components";
 
 import { coordinateGetter as multipleContainersCoordinateGetter } from "./multipleContainersKeyboardCoordinates";
-import { Container, ContainerProps } from "./Container";
+import { Container } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
 import { getColor } from "./helpers";
 import { SortableItem } from "./SortableItem";
+import { DroppableContainer } from "./DroppableContainer";
 
 export default {
   title: "Presets/Sortable/Multiple Containers",
 };
-
-const animateLayoutChanges: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges({ ...args, wasDragging: true });
-
-function DroppableContainer({
-  children,
-  columns = 1,
-  disabled,
-  id,
-  items,
-  style,
-  ...props
-}: ContainerProps & {
-  disabled?: boolean;
-  id: UniqueIdentifier;
-  items: UniqueIdentifier[];
-  style?: React.CSSProperties;
-}) {
-  const {
-    active,
-    attributes,
-    isDragging,
-    listeners,
-    over,
-    setNodeRef,
-    transition,
-    transform,
-  } = useSortable({
-    id,
-    data: {
-      type: "container",
-      children: items,
-    },
-    animateLayoutChanges,
-  });
-  const { setNodeRef: droppableNodeRef, isOver } = useDroppable({
-    id: `${id}-droppable`,
-  });
-  const isOverContainer = over
-    ? (id === over.id && active?.data.current?.type !== "container") ||
-      items.includes(over.id)
-    : false;
-
-  return (
-    <Container
-      ref={disabled ? undefined : setNodeRef}
-      style={{
-        ...style,
-        transition,
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.5 : undefined,
-      }}
-      hover={isOverContainer}
-      handleProps={{
-        ...attributes,
-        ...listeners,
-      }}
-      columns={columns}
-      {...props}
-    >
-      <>
-        <Dropzone
-          ref={droppableNodeRef}
-          style={
-            isOver && String(active?.id).endsWith("-fake-container")
-              ? { border: "1px solid red", borderRadius: "4px" }
-              : undefined
-          }
-        >
-          {children}
-        </Dropzone>
-      </>
-    </Container>
-  );
-}
-
-const Dropzone = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
 
 const dropAnimation: DropAnimation = {
   sideEffects: defaultDropAnimationSideEffects({
@@ -148,13 +63,13 @@ const dropAnimation: DropAnimation = {
 
 interface Props {
   items: Items;
-  setItems: React.Dispatch<React.SetStateAction<Items>>;
+  setItems: Dispatch<SetStateAction<Items>>;
   containers: UniqueIdentifier[];
-  setContainers: React.Dispatch<React.SetStateAction<UniqueIdentifier[]>>;
+  setContainers: Dispatch<SetStateAction<UniqueIdentifier[]>>;
   adjustScale?: boolean;
   cancelDrop?: CancelDrop;
   columns?: number;
-  containerStyle?: React.CSSProperties;
+  containerStyle?: CSSProperties;
   coordinateGetter?: KeyboardCoordinateGetter;
   getItemStyles?(args: {
     value: UniqueIdentifier;
@@ -164,8 +79,8 @@ interface Props {
     containerId: UniqueIdentifier;
     isSorting: boolean;
     isDragOverlay: boolean;
-  }): React.CSSProperties;
-  wrapperStyle?(args: { index: number }): React.CSSProperties;
+  }): CSSProperties;
+  wrapperStyle?(args: { index: number }): CSSProperties;
   handle?: boolean;
   renderItem?: <P>() => ReactElement<
     unknown,
@@ -207,14 +122,6 @@ export function DndList({
   const isSortingContainer =
     activeId != null ? containers.includes(activeId) : false;
 
-  /**
-   * Custom collision detection strategy optimized for multiple containers
-   *
-   * - First, find any droppable containers intersecting with the pointer.
-   * - If there are none, find intersecting containers with the active draggable.
-   * - If there are no intersecting containers, return the last matched intersection
-   *
-   */
   const collisionDetectionStrategy: CollisionDetection = useCallback(
     (args) => {
       if (String(activeId).endsWith("-fake-container")) {
@@ -235,12 +142,10 @@ export function DndList({
         });
       }
 
-      // Start by finding any intersecting droppable
       const pointerIntersections = pointerWithin(args);
       const intersections =
         pointerIntersections.length > 0
-          ? // If there are droppables intersecting with the pointer, return those
-            pointerIntersections
+          ? pointerIntersections
           : rectIntersection(args);
       let overId = getFirstCollision(intersections, "id");
 
@@ -248,9 +153,7 @@ export function DndList({
         if (overId in items) {
           const containerItems = items[overId];
 
-          // If a container is matched and it contains items (columns 'A', 'B', 'C')
           if (containerItems.length > 0) {
-            // Return the closest droppable within that container
             overId = closestCenter({
               ...args,
               droppableContainers: args.droppableContainers.filter(
@@ -267,15 +170,10 @@ export function DndList({
         return [{ id: overId }];
       }
 
-      // When a draggable item moves to a new container, the layout may shift
-      // and the `overId` may become `null`. We manually set the cached `lastOverId`
-      // to the id of the draggable item that was moved to the new container, otherwise
-      // the previous `overId` will be returned which can cause items to incorrectly shift positions
       if (recentlyMovedToNewContainer.current) {
         lastOverId.current = activeId;
       }
 
-      // If no droppable is matched, return the last match
       return lastOverId.current ? [{ id: lastOverId.current }] : [];
     },
     [activeId, items]
@@ -423,10 +321,9 @@ export function DndList({
         )
           ? overId
           : undefined;
-          const droppableContainerParent = droppableContainer ? String(droppableContainer).replace(
-            "-droppable",
-            ""
-          ) : undefined;
+        const droppableContainerParent = droppableContainer
+          ? String(droppableContainer).replace("-droppable", "")
+          : undefined;
 
         if (droppableContainer && droppableContainerParent) {
           setItems((items) => {
@@ -446,7 +343,10 @@ export function DndList({
           );
         }
 
-        if ((overId === PLACEHOLDER_ID || overId === "placeholder-droppable") && !String(active.id).endsWith("-fake-container")) {
+        if (
+          (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") &&
+          !String(active.id).endsWith("-fake-container")
+        ) {
           const newContainerIdRaw = getNextContainerId();
           const newContainerId = newContainerIdRaw.replace(
             "-container",
