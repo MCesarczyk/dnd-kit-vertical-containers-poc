@@ -16,19 +16,19 @@ function App() {
   const [items, setItems] = useState<Items>(() => ({
     ["1-container"]: createRange(
       itemCount,
-      (index: number) => `1${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
+      (index: number) => `A${index + 1}-item`
     ),
     ["2-container"]: createRange(
       itemCount,
-      (index: number) => `2${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
+      (index: number) => `B${index + 1}-item`
     ),
     ["3-container"]: createRange(
       itemCount,
-      (index: number) => `3${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
+      (index: number) => `C${index + 1}-item`
     ),
     ["4-container"]: createRange(
       itemCount,
-      (index: number) => `4${String.fromCharCode('A'.charCodeAt(0) + index)}-item`
+      (index: number) => `D${index + 1}-item`
     ),
   }));
 
@@ -39,7 +39,7 @@ function App() {
   return (
     <Grid>
       <Sidebar>
-        <DndList vertical {...{ items, setItems, containers, setContainers }} />
+        <DndList vertical {...{ items, setItems, containers, setContainers, handle: true }} />
       </Sidebar>
       <Placeholder>
         <div>

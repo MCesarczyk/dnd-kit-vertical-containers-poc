@@ -9,6 +9,7 @@ import { getColor } from "../helpers";
 interface SortableItemProps {
   containerId: UniqueIdentifier;
   id: UniqueIdentifier;
+  label: string;
   index: number;
   handle: boolean;
   disabled?: boolean;
@@ -16,11 +17,13 @@ interface SortableItemProps {
   getIndex(id: UniqueIdentifier): number;
   renderItem?(): ReactElement;
   wrapperStyle({ index }: { index: number }): CSSProperties;
+  onRemove?(): void;
 }
 
 export const SortableItem = ({
   disabled,
   id,
+  label,
   index,
   handle,
   renderItem,
@@ -28,6 +31,7 @@ export const SortableItem = ({
   containerId,
   getIndex,
   wrapperStyle,
+  onRemove,
 }: SortableItemProps) => {
   const {
     setNodeRef,
@@ -49,12 +53,14 @@ export const SortableItem = ({
     <Item
       ref={disabled ? undefined : setNodeRef}
       value={id}
+      label={label}
       dragging={isDragging}
       sorting={isSorting}
       handle={handle}
       handleProps={handle ? { ref: setActivatorNodeRef } : undefined}
       index={index}
       wrapperStyle={wrapperStyle({ index })}
+      onRemove={onRemove}
       style={style({
         index,
         value: id,

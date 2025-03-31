@@ -361,6 +361,7 @@ export function DndList({
                     <SortableItem
                       key={containerId}
                       id={containerId}
+                      label={String(items[containerId][0])}
                       index={containers.indexOf(containerId)}
                       handle={handle}
                       style={getItemStyles}
@@ -368,12 +369,13 @@ export function DndList({
                       renderItem={renderItem}
                       containerId={containerId}
                       getIndex={(id) => getIndex(items, id)}
+                      onRemove={() => handleRemoveItem(items[containerId][0])}
                     />
                   ) : (
                     <DroppableContainer
                       key={containerId}
                       id={containerId}
-                      label={minimal ? undefined : `Container ${containerId}`}
+                      label={minimal ? undefined : String(containerId)}
                       columns={columns}
                       items={items[containerId]}
                       scrollable={scrollable}
@@ -391,6 +393,7 @@ export function DndList({
                               disabled={isSortingContainer}
                               key={value}
                               id={value}
+                              label={String(value)}
                               index={index}
                               handle={handle}
                               style={getItemStyles}
@@ -398,6 +401,7 @@ export function DndList({
                               renderItem={renderItem}
                               containerId={containerId}
                               getIndex={(id) => getIndex(items, id)}
+                              onRemove={() => handleRemoveItem(value)}
                             />
                           );
                         })}
@@ -408,6 +412,7 @@ export function DndList({
               );
             })}
             <button onClick={handleAddContainer}>Add container</button>
+            <button onClick={handleAddItem}>Add Item</button>
           </DroppableContainer>
         </SortableContext>
       </div>
@@ -416,10 +421,13 @@ export function DndList({
           {activeId
             ? containers.includes(activeId) &&
               String(activeId).endsWith("-fake-container")
-              ? renderSortableItemDragOverlay(activeId)
+              ? renderSortableItemDragOverlay(
+                  activeId,
+                  String(items[activeId][0])
+                )
               : String(activeId).endsWith("-container")
               ? renderContainerDragOverlay(activeId)
-              : renderSortableItemDragOverlay(activeId)
+              : renderSortableItemDragOverlay(activeId, String(activeId))
             : null}
         </DragOverlay>,
         document.body
@@ -427,10 +435,11 @@ export function DndList({
     </DndContext>
   );
 
-  function renderSortableItemDragOverlay(id: UniqueIdentifier) {
+  function renderSortableItemDragOverlay(id: UniqueIdentifier, label: string) {
     return (
       <Item
         value={id}
+        label={label}
         handle={handle}
         style={getItemStyles({
           containerId: findContainer(items, id) as UniqueIdentifier,
@@ -452,7 +461,7 @@ export function DndList({
   function renderContainerDragOverlay(containerId: UniqueIdentifier) {
     return (
       <Container
-        label={`Container ${containerId}`}
+        label={String(containerId)}
         columns={columns}
         style={{
           height: "100%",
@@ -464,6 +473,7 @@ export function DndList({
           <Item
             key={item}
             value={item}
+            label={String(item)}
             handle={handle}
             style={getItemStyles({
               containerId,
@@ -518,5 +528,37 @@ export function DndList({
         [newContainerId]: [],
       }));
     });
+  }
+
+  function handleAddItem() {
+    const newItemId = `E${String(Math.random()).slice(2, 6)}-item`;
+    const newContainerId = getNewFakeContainerId(items);
+
+    setContainers((containers) => [...containers, newContainerId]);
+    setItems((items) => ({
+      ...items,
+      [newContainerId]: [newItemId],
+    }));
+    setActiveId(null);
+  }
+
+  function handleRemoveItem(itemId: UniqueIdentifier) {
+    const parentContainerId = findContainer(items, itemId);
+    const key = parentContainerId ? String(parentContainerId) : undefined;
+    if (!key) {
+      return;
+    }
+
+    const newItems = { ...items };
+    if (key.endsWith("-fake-container")) {
+      delete newItems[key];
+      setItems(newItems);
+      setContainers((containers) => containers.filter((id) => id !== key));
+    } else {
+      setItems({
+        ...newItems,
+        [key]: newItems[key].filter((id) => id !== itemId),
+      });
+    }
   }
 }
