@@ -13,7 +13,7 @@ export interface Props {
   disabled?: boolean;
   dragging?: boolean;
   handle?: boolean;
-  handleProps?: any;
+  handleProps?: Parameters<typeof Handle>[0];
   height?: number;
   index?: number;
   fadeIn?: boolean;
@@ -24,6 +24,7 @@ export interface Props {
   transition?: string | null;
   wrapperStyle?: React.CSSProperties;
   value: React.ReactNode;
+  label: string;
   onRemove?(): void;
   renderItem?(args: {
     dragOverlay: boolean;
@@ -51,7 +52,6 @@ export const Item = React.memo(
         fadeIn,
         handle,
         handleProps,
-        height,
         index,
         listeners,
         onRemove,
@@ -61,6 +61,7 @@ export const Item = React.memo(
         transition,
         transform,
         value,
+        label,
         wrapperStyle,
         ...props
       },
@@ -77,6 +78,14 @@ export const Item = React.memo(
           document.body.style.cursor = '';
         };
       }, [dragOverlay]);
+
+      const handleOnRemoveClick = (
+        event: React.MouseEvent<HTMLButtonElement>
+      ) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onRemove?.();
+      };
 
       return renderItem ? (
         renderItem({
@@ -139,10 +148,10 @@ export const Item = React.memo(
             {...props}
             tabIndex={!handle ? 0 : undefined}
           >
-            {value}
+            {label}
             <span className={styles.Actions}>
               {onRemove ? (
-                <Remove className={styles.Remove} onClick={onRemove} />
+                <Remove className={styles.Remove} onClick={handleOnRemoveClick} />
               ) : null}
               {handle ? <Handle {...handleProps} {...listeners} /> : null}
             </span>
