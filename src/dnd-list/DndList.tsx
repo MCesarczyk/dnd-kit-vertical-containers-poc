@@ -40,11 +40,14 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import styled from "styled-components";
+
 import { coordinateGetter as multipleContainersCoordinateGetter } from "./multipleContainersKeyboardCoordinates";
 import { Container, ContainerProps } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
-import styled from "styled-components";
+import { getColor } from "./helpers";
+import { SortableItem } from "./SortableItem";
 
 export default {
   title: "Presets/Sortable/Multiple Containers",
@@ -672,98 +675,4 @@ export function DndList({
 
     return `${String.fromCharCode(sanitizedId.charCodeAt(0) + 1)}-container`;
   }
-}
-
-function getColor(id: UniqueIdentifier) {
-  switch (String(id)[0]) {
-    case "A":
-      return "#ef769f";
-    case "B":
-      return "#ffda6c";
-    case "C":
-      return "#00bcd4";
-    case "D":
-      return "#7193f1";
-  }
-
-  return undefined;
-}
-
-interface SortableItemProps {
-  containerId: UniqueIdentifier;
-  id: UniqueIdentifier;
-  index: number;
-  handle: boolean;
-  disabled?: boolean;
-  style(args: unknown): React.CSSProperties;
-  getIndex(id: UniqueIdentifier): number;
-  renderItem?(): React.ReactElement;
-  wrapperStyle({ index }: { index: number }): React.CSSProperties;
-}
-
-function SortableItem({
-  disabled,
-  id,
-  index,
-  handle,
-  renderItem,
-  style,
-  containerId,
-  getIndex,
-  wrapperStyle,
-}: SortableItemProps) {
-  const {
-    setNodeRef,
-    setActivatorNodeRef,
-    listeners,
-    isDragging,
-    isSorting,
-    over,
-    overIndex,
-    transform,
-    transition,
-  } = useSortable({
-    id,
-  });
-  const mounted = useMountStatus();
-  const mountedWhileDragging = isDragging && !mounted;
-
-  return (
-    <Item
-      ref={disabled ? undefined : setNodeRef}
-      value={id}
-      dragging={isDragging}
-      sorting={isSorting}
-      handle={handle}
-      handleProps={handle ? { ref: setActivatorNodeRef } : undefined}
-      index={index}
-      wrapperStyle={wrapperStyle({ index })}
-      style={style({
-        index,
-        value: id,
-        isDragging,
-        isSorting,
-        overIndex: over ? getIndex(over.id) : overIndex,
-        containerId,
-      })}
-      color={getColor(id)}
-      transition={transition}
-      transform={transform}
-      fadeIn={mountedWhileDragging}
-      listeners={listeners}
-      renderItem={renderItem}
-    />
-  );
-}
-
-function useMountStatus() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setIsMounted(true), 500);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  return isMounted;
 }
