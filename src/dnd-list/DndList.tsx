@@ -4,22 +4,15 @@ import {
   JSXElementConstructor,
   ReactElement,
   SetStateAction,
-  useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import { createPortal, unstable_batchedUpdates } from "react-dom";
 import {
   CancelDrop,
-  closestCenter,
-  pointerWithin,
-  rectIntersection,
-  CollisionDetection,
   DndContext,
   DragOverlay,
   DropAnimation,
-  getFirstCollision,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -43,9 +36,10 @@ import { coordinateGetter as multipleContainersCoordinateGetter } from "./multip
 import { Container } from "./Container";
 import { Item } from "./Item";
 import { Items } from "./types";
-import { getColor } from "./helpers";
+import { getColor, getNextContainerId } from "./helpers";
 import { SortableItem } from "./SortableItem";
 import { DroppableContainer } from "./DroppableContainer";
+import { useCollisionDetectionStrategy } from "./useCollisionDetectionStrategy";
 
 export default {
   title: "Presets/Sortable/Multiple Containers",
@@ -116,68 +110,16 @@ export function DndList({
   vertical = false,
   scrollable,
 }: Props) {
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const lastOverId = useRef<UniqueIdentifier | null>(null);
-  const recentlyMovedToNewContainer = useRef(false);
+  const {
+    collisionDetectionStrategy,
+    setActiveId,
+    recentlyMovedToNewContainer,
+    activeId,
+  } = useCollisionDetectionStrategy(items);
+
   const isSortingContainer =
     activeId != null ? containers.includes(activeId) : false;
 
-  const collisionDetectionStrategy: CollisionDetection = useCallback(
-    (args) => {
-      if (String(activeId).endsWith("-fake-container")) {
-        return pointerWithin({
-          ...args,
-          droppableContainers: args.droppableContainers.filter(
-            (container) => container.id !== activeId
-          ),
-        });
-      }
-
-      if (activeId && activeId in items) {
-        return closestCenter({
-          ...args,
-          droppableContainers: args.droppableContainers.filter(
-            (container) => container.id in items
-          ),
-        });
-      }
-
-      const pointerIntersections = pointerWithin(args);
-      const intersections =
-        pointerIntersections.length > 0
-          ? pointerIntersections
-          : rectIntersection(args);
-      let overId = getFirstCollision(intersections, "id");
-
-      if (overId != null) {
-        if (overId in items) {
-          const containerItems = items[overId];
-
-          if (containerItems.length > 0) {
-            overId = closestCenter({
-              ...args,
-              droppableContainers: args.droppableContainers.filter(
-                (container) =>
-                  container.id !== overId &&
-                  containerItems.includes(container.id)
-              ),
-            })[0]?.id;
-          }
-        }
-
-        lastOverId.current = overId;
-
-        return [{ id: overId }];
-      }
-
-      if (recentlyMovedToNewContainer.current) {
-        lastOverId.current = activeId;
-      }
-
-      return lastOverId.current ? [{ id: lastOverId.current }] : [];
-    },
-    [activeId, items]
-  );
   const [clonedItems, setClonedItems] = useState<Items | null>(null);
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -219,7 +161,7 @@ export function DndList({
     requestAnimationFrame(() => {
       recentlyMovedToNewContainer.current = false;
     });
-  }, [items]);
+  }, [items, recentlyMovedToNewContainer]);
 
   return (
     <DndContext
@@ -347,7 +289,7 @@ export function DndList({
           (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") &&
           !String(active.id).endsWith("-fake-container")
         ) {
-          const newContainerIdRaw = getNextContainerId();
+          const newContainerIdRaw = getNextContainerId(items);
           const newContainerId = newContainerIdRaw.replace(
             "-container",
             "-fake-container"
@@ -557,7 +499,7 @@ export function DndList({
   }
 
   function handleAddContainer() {
-    const newContainerId = getNextContainerId();
+    const newContainerId = getNextContainerId(items);
 
     unstable_batchedUpdates(() => {
       setContainers((containers) => [...containers, newContainerId]);
@@ -566,13 +508,5 @@ export function DndList({
         [newContainerId]: [],
       }));
     });
-  }
-
-  function getNextContainerId() {
-    const containerIds = Object.keys(items);
-    const lastContainerId = containerIds[containerIds.length - 1];
-    const sanitizedId = lastContainerId.replace(/[^A-Z]/g, "");
-
-    return `${String.fromCharCode(sanitizedId.charCodeAt(0) + 1)}-container`;
   }
 }
