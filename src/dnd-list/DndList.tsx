@@ -23,6 +23,9 @@ import {
   MeasuringStrategy,
   KeyboardCoordinateGetter,
   defaultDropAnimationSideEffects,
+  DragStartEvent,
+  DragOverEvent,
+  DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -148,7 +151,165 @@ export function DndList({
     return index;
   };
 
-  const onDragCancel = () => {
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveId(active.id);
+    setClonedItems(items);
+  };
+
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
+    const overId = over?.id;
+
+    if (overId == null || active.id in items) {
+      return;
+    }
+
+    const overContainer = findContainer(overId);
+    const activeContainer = findContainer(active.id);
+
+    if (!overContainer || !activeContainer) {
+      return;
+    }
+
+    if (activeContainer !== overContainer) {
+      setItems((items) => {
+        const activeItems = items[activeContainer];
+        const overItems = items[overContainer];
+        const overIndex = overItems.indexOf(overId);
+        const activeIndex = activeItems.indexOf(active.id);
+
+        let newIndex: number;
+
+        if (overId in items) {
+          newIndex = overItems.length + 1;
+        } else {
+          const isBelowOverItem =
+            over &&
+            active.rect.current.translated &&
+            active.rect.current.translated.top >
+              over.rect.top + over.rect.height;
+
+          const modifier = isBelowOverItem ? 1 : 0;
+
+          newIndex =
+            overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+        }
+
+        recentlyMovedToNewContainer.current = true;
+
+        return {
+          ...items,
+          [activeContainer]: items[activeContainer].filter(
+            (item) => item !== active.id
+          ),
+          [overContainer]: [
+            ...items[overContainer].slice(0, newIndex),
+            items[activeContainer][activeIndex],
+            ...items[overContainer].slice(
+              newIndex,
+              items[overContainer].length
+            ),
+          ],
+        };
+      });
+    }
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.id in items && over?.id) {
+      setContainers((containers) => {
+        const activeIndex = containers.indexOf(active.id);
+        const overIndex = containers.indexOf(over.id);
+
+        return arrayMove(containers, activeIndex, overIndex);
+      });
+    }
+
+    const activeContainer = findContainer(active.id);
+
+    if (!activeContainer) {
+      setActiveId(null);
+      return;
+    }
+
+    const overId = over?.id;
+
+    if (overId == null) {
+      setActiveId(null);
+      return;
+    }
+
+    const fakeContainerContent = items[activeContainer][0];
+    const droppableContainer = String(overId).endsWith("-container-droppable")
+      ? overId
+      : undefined;
+    const droppableContainerParent = droppableContainer
+      ? String(droppableContainer).replace("-droppable", "")
+      : undefined;
+
+    if (droppableContainer && droppableContainerParent) {
+      setItems((items) => {
+        const newItems: Items = items;
+        delete newItems[activeContainer];
+
+        return {
+          ...newItems,
+          [droppableContainerParent]: [
+            ...(items[droppableContainerParent] || []),
+            fakeContainerContent,
+          ],
+        };
+      });
+      setContainers((containers) =>
+        containers.filter((id) => id !== activeContainer)
+      );
+    }
+
+    if (
+      (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") &&
+      !String(active.id).endsWith("-fake-container")
+    ) {
+      const newContainerIdRaw = getNextContainerId(items);
+      const newContainerId = newContainerIdRaw.replace(
+        "-container",
+        "-fake-container"
+      );
+
+      unstable_batchedUpdates(() => {
+        setContainers((containers) => [...containers, newContainerId]);
+        setItems((items) => ({
+          ...items,
+          [activeContainer]: items[activeContainer].filter(
+            (id) => id !== activeId
+          ),
+          [newContainerId]: [active.id],
+        }));
+        setActiveId(null);
+      });
+      return;
+    }
+
+    const overContainer = findContainer(overId);
+
+    if (overContainer) {
+      const activeIndex = items[activeContainer].indexOf(active.id);
+      const overIndex = items[overContainer].indexOf(overId);
+
+      if (activeIndex !== overIndex) {
+        setItems((items) => ({
+          ...items,
+          [overContainer]: arrayMove(
+            items[overContainer],
+            activeIndex,
+            overIndex
+          ),
+        }));
+      }
+    }
+
+    setActiveId(null);
+  };
+
+  const handleDragCancel = () => {
     if (clonedItems) {
       setItems(clonedItems);
     }
@@ -172,165 +333,11 @@ export function DndList({
           strategy: MeasuringStrategy.Always,
         },
       }}
-      onDragStart={({ active }) => {
-        setActiveId(active.id);
-        setClonedItems(items);
-      }}
-      onDragOver={({ active, over }) => {
-        const overId = over?.id;
-
-        if (overId == null || active.id in items) {
-          return;
-        }
-
-        const overContainer = findContainer(overId);
-        const activeContainer = findContainer(active.id);
-
-        if (!overContainer || !activeContainer) {
-          return;
-        }
-
-        if (activeContainer !== overContainer) {
-          setItems((items) => {
-            const activeItems = items[activeContainer];
-            const overItems = items[overContainer];
-            const overIndex = overItems.indexOf(overId);
-            const activeIndex = activeItems.indexOf(active.id);
-
-            let newIndex: number;
-
-            if (overId in items) {
-              newIndex = overItems.length + 1;
-            } else {
-              const isBelowOverItem =
-                over &&
-                active.rect.current.translated &&
-                active.rect.current.translated.top >
-                  over.rect.top + over.rect.height;
-
-              const modifier = isBelowOverItem ? 1 : 0;
-
-              newIndex =
-                overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
-            }
-
-            recentlyMovedToNewContainer.current = true;
-
-            return {
-              ...items,
-              [activeContainer]: items[activeContainer].filter(
-                (item) => item !== active.id
-              ),
-              [overContainer]: [
-                ...items[overContainer].slice(0, newIndex),
-                items[activeContainer][activeIndex],
-                ...items[overContainer].slice(
-                  newIndex,
-                  items[overContainer].length
-                ),
-              ],
-            };
-          });
-        }
-      }}
-      onDragEnd={({ active, over }) => {
-        if (active.id in items && over?.id) {
-          setContainers((containers) => {
-            const activeIndex = containers.indexOf(active.id);
-            const overIndex = containers.indexOf(over.id);
-
-            return arrayMove(containers, activeIndex, overIndex);
-          });
-        }
-
-        const activeContainer = findContainer(active.id);
-
-        if (!activeContainer) {
-          setActiveId(null);
-          return;
-        }
-
-        const overId = over?.id;
-
-        if (overId == null) {
-          setActiveId(null);
-          return;
-        }
-
-        const fakeContainerContent = items[activeContainer][0];
-        const droppableContainer = String(overId).endsWith(
-          "-container-droppable"
-        )
-          ? overId
-          : undefined;
-        const droppableContainerParent = droppableContainer
-          ? String(droppableContainer).replace("-droppable", "")
-          : undefined;
-
-        if (droppableContainer && droppableContainerParent) {
-          setItems((items) => {
-            const newItems: Items = items;
-            delete newItems[activeContainer];
-
-            return {
-              ...newItems,
-              [droppableContainerParent]: [
-                ...(items[droppableContainerParent] || []),
-                fakeContainerContent,
-              ],
-            };
-          });
-          setContainers((containers) =>
-            containers.filter((id) => id !== activeContainer)
-          );
-        }
-
-        if (
-          (overId === PLACEHOLDER_ID || overId === "placeholder-droppable") &&
-          !String(active.id).endsWith("-fake-container")
-        ) {
-          const newContainerIdRaw = getNextContainerId(items);
-          const newContainerId = newContainerIdRaw.replace(
-            "-container",
-            "-fake-container"
-          );
-
-          unstable_batchedUpdates(() => {
-            setContainers((containers) => [...containers, newContainerId]);
-            setItems((items) => ({
-              ...items,
-              [activeContainer]: items[activeContainer].filter(
-                (id) => id !== activeId
-              ),
-              [newContainerId]: [active.id],
-            }));
-            setActiveId(null);
-          });
-          return;
-        }
-
-        const overContainer = findContainer(overId);
-
-        if (overContainer) {
-          const activeIndex = items[activeContainer].indexOf(active.id);
-          const overIndex = items[overContainer].indexOf(overId);
-
-          if (activeIndex !== overIndex) {
-            setItems((items) => ({
-              ...items,
-              [overContainer]: arrayMove(
-                items[overContainer],
-                activeIndex,
-                overIndex
-              ),
-            }));
-          }
-        }
-
-        setActiveId(null);
-      }}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
       cancelDrop={cancelDrop}
-      onDragCancel={onDragCancel}
+      onDragCancel={handleDragCancel}
       modifiers={modifiers}
     >
       <div
