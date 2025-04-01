@@ -1,6 +1,7 @@
 import {
   CSSProperties,
   Dispatch,
+  Fragment,
   JSXElementConstructor,
   ReactElement,
   SetStateAction,
@@ -361,10 +362,9 @@ export function DndList({
             {containers.map((containerId) => {
               const fake = String(containerId).endsWith("-fake-container");
               return (
-                <>
+                <Fragment key={containerId}>
                   {fake ? (
                     <SortableItem
-                      key={`${containerId}-fake`}
                       id={containerId}
                       label={String(items[containerId][0])}
                       index={containers.indexOf(containerId)}
@@ -378,7 +378,6 @@ export function DndList({
                     />
                   ) : (
                     <DroppableContainer
-                      key={containerId}
                       id={containerId}
                       label={minimal ? undefined : String(containerId)}
                       columns={columns}
@@ -413,7 +412,7 @@ export function DndList({
                       </SortableContext>
                     </DroppableContainer>
                   )}
-                </>
+                </Fragment>
               );
             })}
             <button onClick={handleAddContainer}>Add container</button>
@@ -443,7 +442,6 @@ export function DndList({
   function renderSortableItemDragOverlay(id: UniqueIdentifier, label: string) {
     return (
       <Item
-        key={`${id}-single-item-drag-overlay`}
         value={id}
         label={label}
         handle={handle}
@@ -477,7 +475,7 @@ export function DndList({
       >
         {items[containerId].map((item, index) => (
           <Item
-            key={`${item}-children-item-drag-overlay`}
+            key={item}
             value={item}
             label={String(item)}
             handle={handle}
