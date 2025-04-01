@@ -3,10 +3,10 @@ import {
   defaultAnimateLayoutChanges,
   useSortable,
 } from "@dnd-kit/sortable";
-import styled from "styled-components";
-import { Container, ContainerProps } from "../Container";
 import { UniqueIdentifier, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import styled from "styled-components";
+import { Container, ContainerProps } from "../Container";
 
 const animateLayoutChanges: AnimateLayoutChanges = (args) =>
   defaultAnimateLayoutChanges({ ...args, wasDragging: true });
