@@ -1,16 +1,16 @@
-import React, { forwardRef } from "react";
+import { CSSProperties, forwardRef, HTMLAttributes, ReactNode } from "react";
 import styled, { css } from "styled-components";
 
 import { Handle, Remove } from "../Item";
 
 export interface Props {
-  children: React.ReactNode;
+  children: ReactNode;
   columns?: number;
   label?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   horizontal?: boolean;
   hover?: boolean;
-  handleProps?: React.HTMLAttributes<unknown>;
+  handleProps?: HTMLAttributes<unknown>;
   scrollable?: boolean;
   shadow?: boolean;
   placeholder?: boolean;
@@ -56,7 +56,7 @@ export const Container = forwardRef<HTMLDivElement, Props>(
           {
             ...style,
             "--columns": columns,
-          } as React.CSSProperties
+          } as CSSProperties
         }
         onClick={onClick}
         tabIndex={onClick ? 0 : undefined}
