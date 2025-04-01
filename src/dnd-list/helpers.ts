@@ -1,4 +1,5 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
+
 import { Items } from "./types";
 
 export const getColor = (id: UniqueIdentifier) => {

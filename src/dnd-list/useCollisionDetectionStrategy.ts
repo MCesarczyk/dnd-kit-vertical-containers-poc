@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { closestCenter, CollisionDetection, getFirstCollision, pointerWithin, rectIntersection, UniqueIdentifier } from "@dnd-kit/core";
+
 import { Items } from "./types";
 
 export const useCollisionDetectionStrategy = (items: Items) => {
